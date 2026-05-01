@@ -1,5 +1,5 @@
+import 'home_screen.dart';
 import 'package:flutter/material.dart';
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -181,8 +181,8 @@ class _LoginScreenState extends State<LoginScreen>
                 _showSnack('Please enter Email and Password!');
                 return;
               }
-              _showSnack(
-                  'Login will work after Firebase setup!');
+             Navigator.pushReplacement(context,
+    MaterialPageRoute(builder: (_) => const HomeScreen()));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF3B6D11),
