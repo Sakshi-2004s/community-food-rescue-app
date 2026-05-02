@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 name: community_food_rescue
+=======
+name: food_rescue_app
+>>>>>>> feature/frontend-member1
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -34,6 +38,13 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+<<<<<<< HEAD
+=======
+  firebase_core: ^4.7.0
+  firebase_auth: ^6.4.0
+  cloud_firestore: ^6.3.0
+  google_sign_in: ^7.2.0
+>>>>>>> feature/frontend-member1
 
 dev_dependencies:
   flutter_test:

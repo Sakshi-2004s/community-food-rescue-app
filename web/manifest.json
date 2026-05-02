@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "community_food_rescue",
     "short_name": "community_food_rescue",
+=======
+    "name": "food_rescue_app",
+    "short_name": "food_rescue_app",
+>>>>>>> feature/frontend-member1
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

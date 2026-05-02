@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "27841849348",
+    "project_id": "community-food-rescue",
+    "storage_bucket": "community-food-rescue.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:27841849348:android:cb85408a8e42ea45866d51",
+        "android_client_info": {
+          "package_name": "com.example.food_rescue_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "27841849348-50sickq71led6ofb8a7bde45t6vn9qa2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.food_rescue_app",
+            "certificate_hash": "4710cec59fcd146f1e9489ea20639eb0a7e57d11"
+          }
+        },
+        {
+          "client_id": "27841849348-sjbbhk511mbt63tb9p73jeajra1tfph4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8ltzyVOafTtaSvqvR1EwFuWOxQYxg3LA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "27841849348-sjbbhk511mbt63tb9p73jeajra1tfph4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

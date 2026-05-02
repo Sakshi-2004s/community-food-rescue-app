@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'listing_detail_screen.dart';
 import 'live_map_screen.dart';
 import 'request_food_screen.dart' as req;
 import 'volunteer_screen.dart' as vol;
 
 void main() {
+=======
+import 'package:firebase_core/firebase_core.dart';
+import 'screens/splash_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+>>>>>>> feature/frontend-member1
   runApp(const MyApp());
 }
 
@@ -17,6 +26,7 @@ class MyApp extends StatelessWidget {
       title: 'Community Food Rescue',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+<<<<<<< HEAD
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
@@ -72,3 +82,13 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
+=======
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF3B6D11)),
+        useMaterial3: true,
+      ),
+      home: const SplashScreen(),
+    );
+  }
+}
+>>>>>>> feature/frontend-member1

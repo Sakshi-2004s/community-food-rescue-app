@@ -8,7 +8,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+<<<<<<< HEAD
 import 'package:community_food_rescue/main.dart';
+=======
+import 'package:food_rescue_app/main.dart';
+>>>>>>> feature/frontend-member1
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
