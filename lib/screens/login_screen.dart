@@ -1,5 +1,7 @@
-import 'home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'home_screen.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -13,12 +15,14 @@ class _LoginScreenState extends State<LoginScreen>
   final _loginEmailController = TextEditingController();
   final _loginPasswordController = TextEditingController();
   bool _loginPasswordVisible = false;
+  bool _loginLoading = false;
 
   final _regNameController = TextEditingController();
   final _regEmailController = TextEditingController();
   final _regPasswordController = TextEditingController();
   String _selectedRole = 'Donor';
   bool _regPasswordVisible = false;
+  bool _regLoading = false;
 
   final List<String> _roles = ['Donor', 'Receiver', 'Volunteer'];
 
@@ -42,6 +46,52 @@ class _LoginScreenState extends State<LoginScreen>
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _login() async {
+    if (_loginEmailController.text.isEmpty ||
+        _loginPasswordController.text.isEmpty) {
+      _showSnack('Please enter Email and Password!');
+      return;
+    }
+    setState(() => _loginLoading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _loginEmailController.text.trim(),
+        password: _loginPasswordController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(
+              builder: (_) => const HomeScreen()));
+    } catch (e) {
+      _showSnack('Login failed! Check email and password.');
+    }
+    setState(() => _loginLoading = false);
+  }
+
+  Future<void> _register() async {
+    if (_regNameController.text.isEmpty ||
+        _regEmailController.text.isEmpty ||
+        _regPasswordController.text.isEmpty) {
+      _showSnack('Please fill all fields!');
+      return;
+    }
+    setState(() => _regLoading = true);
+    try {
+      await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: _regEmailController.text.trim(),
+        password: _regPasswordController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(
+              builder: (_) => const HomeScreen()));
+    } catch (e) {
+      _showSnack('Register failed! Try again.');
+    }
+    setState(() => _regLoading = false);
   }
 
   @override
@@ -76,7 +126,8 @@ class _LoginScreenState extends State<LoginScreen>
               const Text(
                 'Rescue Food. Feed Lives.',
                 style: TextStyle(
-                    fontSize: 14, color: Color(0xFF3B6D11)),
+                    fontSize: 14,
+                    color: Color(0xFF3B6D11)),
               ),
               const SizedBox(height: 32),
               Container(
@@ -90,14 +141,15 @@ class _LoginScreenState extends State<LoginScreen>
                       controller: _tabController,
                       labelColor: const Color(0xFF3B6D11),
                       unselectedLabelColor: Colors.grey,
-                      indicatorColor: const Color(0xFF3B6D11),
+                      indicatorColor:
+                          const Color(0xFF3B6D11),
                       tabs: const [
                         Tab(text: 'Login'),
                         Tab(text: 'Register'),
                       ],
                     ),
                     SizedBox(
-                      height: 420,
+                      height: 460,
                       child: TabBarView(
                         controller: _tabController,
                         children: [
@@ -111,19 +163,23 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               const SizedBox(height: 20),
               OutlinedButton.icon(
-                onPressed: () => _showSnack(
-                    'Google Sign-In will work after Firebase setup!'),
+                onPressed: () =>
+                    _showSnack('Google Sign-In coming soon!'),
                 icon: const Icon(Icons.login,
                     color: Color(0xFF3B6D11)),
                 label: const Text(
                   'Continue with Google',
-                  style: TextStyle(color: Color(0xFF3B6D11)),
+                  style: TextStyle(
+                      color: Color(0xFF3B6D11)),
                 ),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  side: const BorderSide(color: Color(0xFF3B6D11)),
+                  minimumSize:
+                      const Size(double.infinity, 50),
+                  side: const BorderSide(
+                      color: Color(0xFF3B6D11)),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius:
+                          BorderRadius.circular(12)),
                 ),
               ),
             ],
@@ -142,22 +198,23 @@ class _LoginScreenState extends State<LoginScreen>
           TextField(
             controller: _loginEmailController,
             keyboardType: TextInputType.emailAddress,
-            decoration:
-                _inputDecoration('Email', Icons.email_outlined),
+            decoration: _inputDecoration(
+                'Email', Icons.email_outlined),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _loginPasswordController,
             obscureText: !_loginPasswordVisible,
-            decoration:
-                _inputDecoration('Password', Icons.lock_outline)
-                    .copyWith(
+            decoration: _inputDecoration(
+                    'Password', Icons.lock_outline)
+                .copyWith(
               suffixIcon: IconButton(
                 icon: Icon(_loginPasswordVisible
                     ? Icons.visibility_off
                     : Icons.visibility),
                 onPressed: () => setState(() =>
-                    _loginPasswordVisible = !_loginPasswordVisible),
+                    _loginPasswordVisible =
+                        !_loginPasswordVisible),
               ),
             ),
           ),
@@ -165,37 +222,49 @@ class _LoginScreenState extends State<LoginScreen>
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () => _showSnack(
-                  'Password reset email will be sent!'),
+              onPressed: () async {
+                if (_loginEmailController.text.isEmpty) {
+                  _showSnack(
+                      'Please enter your email first!');
+                  return;
+                }
+                await FirebaseAuth.instance
+                    .sendPasswordResetEmail(
+                        email: _loginEmailController
+                            .text
+                            .trim());
+                _showSnack(
+                    'Password reset email sent!');
+              },
               child: const Text(
                 'Forgot Password?',
-                style: TextStyle(color: Color(0xFF3B6D11)),
+                style: TextStyle(
+                    color: Color(0xFF3B6D11)),
               ),
             ),
           ),
           const SizedBox(height: 8),
           ElevatedButton(
-            onPressed: () {
-              if (_loginEmailController.text.isEmpty ||
-                  _loginPasswordController.text.isEmpty) {
-                _showSnack('Please enter Email and Password!');
-                return;
-              }
-             Navigator.pushReplacement(context,
-    MaterialPageRoute(builder: (_) => const HomeScreen()));
-            },
+            onPressed: _loginLoading ? null : _login,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B6D11),
+              backgroundColor:
+                  const Color(0xFF3B6D11),
               foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 50),
+              minimumSize:
+                  const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius:
+                      BorderRadius.circular(12)),
             ),
-            child: const Text(
-              'Login',
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            child: _loginLoading
+                ? const CircularProgressIndicator(
+                    color: Colors.white)
+                : const Text(
+                    'Login',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold),
+                  ),
           ),
         ],
       ),
@@ -217,28 +286,30 @@ class _LoginScreenState extends State<LoginScreen>
           TextField(
             controller: _regEmailController,
             keyboardType: TextInputType.emailAddress,
-            decoration:
-                _inputDecoration('Email', Icons.email_outlined),
+            decoration: _inputDecoration(
+                'Email', Icons.email_outlined),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _regPasswordController,
             obscureText: !_regPasswordVisible,
-            decoration:
-                _inputDecoration('Password', Icons.lock_outline)
-                    .copyWith(
+            decoration: _inputDecoration(
+                    'Password', Icons.lock_outline)
+                .copyWith(
               suffixIcon: IconButton(
                 icon: Icon(_regPasswordVisible
                     ? Icons.visibility_off
                     : Icons.visibility),
                 onPressed: () => setState(() =>
-                    _regPasswordVisible = !_regPasswordVisible),
+                    _regPasswordVisible =
+                        !_regPasswordVisible),
               ),
             ),
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey),
               borderRadius: BorderRadius.circular(12),
@@ -252,52 +323,53 @@ class _LoginScreenState extends State<LoginScreen>
                           value: role,
                           child: Row(children: [
                             Icon(_roleIcon(role),
-                                color: const Color(0xFF3B6D11),
+                                color: const Color(
+                                    0xFF3B6D11),
                                 size: 20),
                             const SizedBox(width: 8),
                             Text(role),
                           ]),
                         ))
                     .toList(),
-                onChanged: (val) =>
-                    setState(() => _selectedRole = val!),
+                onChanged: (val) => setState(
+                    () => _selectedRole = val!),
               ),
             ),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
-              if (_regNameController.text.isEmpty ||
-                  _regEmailController.text.isEmpty ||
-                  _regPasswordController.text.isEmpty) {
-                _showSnack('Please fill all fields!');
-                return;
-              }
-              _showSnack(
-                  'Register will work after Firebase setup!');
-            },
+            onPressed: _regLoading ? null : _register,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B6D11),
+              backgroundColor:
+                  const Color(0xFF3B6D11),
               foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 50),
+              minimumSize:
+                  const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius:
+                      BorderRadius.circular(12)),
             ),
-            child: const Text(
-              'Create Account',
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            child: _regLoading
+                ? const CircularProgressIndicator(
+                    color: Colors.white)
+                : const Text(
+                    'Create Account',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(
+      String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: const Color(0xFF3B6D11)),
+      prefixIcon: Icon(icon,
+          color: const Color(0xFF3B6D11)),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12)),
       focusedBorder: OutlineInputBorder(

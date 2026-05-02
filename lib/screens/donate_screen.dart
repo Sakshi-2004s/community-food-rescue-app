@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DonateScreen extends StatefulWidget {
   const DonateScreen({super.key});
@@ -13,6 +15,7 @@ class _DonateScreenState extends State<DonateScreen> {
   String _selectedCategory = 'Cooked Food';
   String _selectedUnit = 'Portions';
   String _selectedPickup = 'Morning (6AM - 10AM)';
+  bool _isLoading = false;
 
   final List<String> _categories = [
     'Cooked Food',
@@ -48,6 +51,37 @@ class _DonateScreenState extends State<DonateScreen> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  Future<void> _submitDonation() async {
+    if (_nameController.text.isEmpty ||
+        _quantityController.text.isEmpty) {
+      _showSnack('Please fill Food Name and Quantity!');
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('food_listings')
+          .add({
+        'title': _nameController.text.trim(),
+        'category': _selectedCategory,
+        'quantity': _quantityController.text.trim(),
+        'unit': _selectedUnit,
+        'pickup_time': _selectedPickup,
+        'description': _descController.text.trim(),
+        'status': 'available',
+        'donor_uid':
+            FirebaseAuth.instance.currentUser?.uid ?? '',
+        'created_at': FieldValue.serverTimestamp(),
+      });
+      _showSnack('Food listed successfully! 🎉');
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      _showSnack('Error! Try again.');
+    }
+    setState(() => _isLoading = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,9 +91,11 @@ class _DonateScreenState extends State<DonateScreen> {
         title: const Text(
           'Donate Food',
           style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontWeight: FontWeight.bold),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme:
+            const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -69,7 +105,7 @@ class _DonateScreenState extends State<DonateScreen> {
             // Photo Upload
             GestureDetector(
               onTap: () => _showSnack(
-                  'Camera will work after image_picker setup!'),
+                  'Camera coming soon!'),
               child: Container(
                 width: double.infinity,
                 height: 180,
@@ -79,14 +115,15 @@ class _DonateScreenState extends State<DonateScreen> {
                   border: Border.all(
                     color: const Color(0xFF3B6D11),
                     width: 1.5,
-                    style: BorderStyle.solid,
                   ),
                 ),
                 child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
                   children: [
                     Icon(Icons.camera_alt_outlined,
-                        size: 48, color: Color(0xFF3B6D11)),
+                        size: 48,
+                        color: Color(0xFF3B6D11)),
                     SizedBox(height: 8),
                     Text(
                       'Tap to add food photo',
@@ -97,9 +134,10 @@ class _DonateScreenState extends State<DonateScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'or use AI Scanner to auto-detect food',
+                      'or use AI Scanner to auto-detect',
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey),
+                          fontSize: 12,
+                          color: Colors.grey),
                     ),
                   ],
                 ),
@@ -116,20 +154,22 @@ class _DonateScreenState extends State<DonateScreen> {
                   color: Color(0xFF3B6D11)),
               label: const Text(
                 'Use AI Food Scanner',
-                style: TextStyle(color: Color(0xFF3B6D11)),
+                style:
+                    TextStyle(color: Color(0xFF3B6D11)),
               ),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 44),
-                side:
-                    const BorderSide(color: Color(0xFF3B6D11)),
+                minimumSize:
+                    const Size(double.infinity, 44),
+                side: const BorderSide(
+                    color: Color(0xFF3B6D11)),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                    borderRadius:
+                        BorderRadius.circular(10)),
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // Food Name
             _sectionLabel('Food Name'),
             const SizedBox(height: 6),
             TextField(
@@ -141,20 +181,18 @@ class _DonateScreenState extends State<DonateScreen> {
 
             const SizedBox(height: 16),
 
-            // Category
             _sectionLabel('Category'),
             const SizedBox(height: 6),
             _buildDropdown(
               value: _selectedCategory,
               items: _categories,
               icon: Icons.category_outlined,
-              onChanged: (val) =>
-                  setState(() => _selectedCategory = val!),
+              onChanged: (val) => setState(
+                  () => _selectedCategory = val!),
             ),
 
             const SizedBox(height: 16),
 
-            // Quantity + Unit
             _sectionLabel('Quantity'),
             const SizedBox(height: 6),
             Row(
@@ -165,7 +203,8 @@ class _DonateScreenState extends State<DonateScreen> {
                     controller: _quantityController,
                     keyboardType: TextInputType.number,
                     decoration: _inputDecoration(
-                        'Amount', Icons.numbers_outlined),
+                        'Amount',
+                        Icons.numbers_outlined),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -175,8 +214,8 @@ class _DonateScreenState extends State<DonateScreen> {
                     value: _selectedUnit,
                     items: _units,
                     icon: Icons.scale_outlined,
-                    onChanged: (val) =>
-                        setState(() => _selectedUnit = val!),
+                    onChanged: (val) => setState(
+                        () => _selectedUnit = val!),
                   ),
                 ),
               ],
@@ -184,43 +223,43 @@ class _DonateScreenState extends State<DonateScreen> {
 
             const SizedBox(height: 16),
 
-            // Pickup Time
             _sectionLabel('Pickup Time Slot'),
             const SizedBox(height: 6),
             _buildDropdown(
               value: _selectedPickup,
               items: _pickupSlots,
               icon: Icons.access_time_outlined,
-              onChanged: (val) =>
-                  setState(() => _selectedPickup = val!),
+              onChanged: (val) => setState(
+                  () => _selectedPickup = val!),
             ),
 
             const SizedBox(height: 16),
 
-            // Location
             _sectionLabel('Pickup Location'),
             const SizedBox(height: 6),
             OutlinedButton.icon(
-              onPressed: () =>
-                  _showSnack('GPS location will work after geolocator setup!'),
+              onPressed: () => _showSnack(
+                  'GPS location coming soon!'),
               icon: const Icon(Icons.my_location,
                   color: Color(0xFF3B6D11)),
               label: const Text(
                 'Use My Current Location',
-                style: TextStyle(color: Color(0xFF3B6D11)),
+                style:
+                    TextStyle(color: Color(0xFF3B6D11)),
               ),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
+                minimumSize:
+                    const Size(double.infinity, 48),
                 side: const BorderSide(
                     color: Color(0xFF3B6D11)),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                    borderRadius:
+                        BorderRadius.circular(10)),
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // Description
             _sectionLabel('Description (Optional)'),
             const SizedBox(height: 6),
             TextField(
@@ -234,20 +273,20 @@ class _DonateScreenState extends State<DonateScreen> {
 
             const SizedBox(height: 24),
 
-            // Submit Button
             ElevatedButton.icon(
-              onPressed: () {
-                if (_nameController.text.isEmpty ||
-                    _quantityController.text.isEmpty) {
-                  _showSnack(
-                      'Please fill Food Name and Quantity!');
-                  return;
-                }
-                _showSnack(
-                    'Food listed! Firebase will save it on Day 6.');
-              },
-              icon: const Icon(Icons.check_circle_outline,
-                  color: Colors.white),
+              onPressed:
+                  _isLoading ? null : _submitDonation,
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2),
+                    )
+                  : const Icon(
+                      Icons.check_circle_outline,
+                      color: Colors.white),
               label: const Text(
                 'List My Food Now',
                 style: TextStyle(
@@ -256,10 +295,13 @@ class _DonateScreenState extends State<DonateScreen> {
                     color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B6D11),
-                minimumSize: const Size(double.infinity, 54),
+                backgroundColor:
+                    const Color(0xFF3B6D11),
+                minimumSize:
+                    const Size(double.infinity, 54),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius:
+                        BorderRadius.circular(12)),
               ),
             ),
 
@@ -303,7 +345,8 @@ class _DonateScreenState extends State<DonateScreen> {
               .map((item) => DropdownMenuItem(
                     value: item,
                     child: Text(item,
-                        style: const TextStyle(fontSize: 14)),
+                        style:
+                            const TextStyle(fontSize: 14)),
                   ))
               .toList(),
           onChanged: onChanged,
@@ -316,9 +359,10 @@ class _DonateScreenState extends State<DonateScreen> {
       String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle:
-          TextStyle(fontSize: 13, color: Colors.grey[500]),
-      prefixIcon: Icon(icon, color: const Color(0xFF3B6D11)),
+      hintStyle: TextStyle(
+          fontSize: 13, color: Colors.grey[500]),
+      prefixIcon:
+          Icon(icon, color: const Color(0xFF3B6D11)),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
