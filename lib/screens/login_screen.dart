@@ -62,10 +62,15 @@ class _LoginScreenState extends State<LoginScreen>
       );
       if (!mounted) return;
       Navigator.pushReplacement(context,
-          MaterialPageRoute(
-              builder: (_) => const HomeScreen()));
-    } catch (e) {
-      _showSnack('Login failed! Check email and password.');
+          MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        _showSnack('No account found with this email!');
+      } else if (e.code == 'wrong-password') {
+        _showSnack('Wrong password! Try again.');
+      } else {
+        _showSnack('Login failed! Check your credentials.');
+      }
     }
     setState(() => _loginLoading = false);
   }
@@ -77,21 +82,51 @@ class _LoginScreenState extends State<LoginScreen>
       _showSnack('Please fill all fields!');
       return;
     }
+    if (_regPasswordController.text.length < 6) {
+      _showSnack('Password must be at least 6 characters!');
+      return;
+    }
     setState(() => _regLoading = true);
     try {
-      await FirebaseAuth.instance
+      UserCredential userCredential = await FirebaseAuth
+          .instance
           .createUserWithEmailAndPassword(
         email: _regEmailController.text.trim(),
         password: _regPasswordController.text.trim(),
       );
+      await userCredential.user
+          ?.updateDisplayName(_regNameController.text.trim());
       if (!mounted) return;
       Navigator.pushReplacement(context,
-          MaterialPageRoute(
-              builder: (_) => const HomeScreen()));
-    } catch (e) {
-      _showSnack('Register failed! Try again.');
+          MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        _showSnack('Account already exists! Please login.');
+      } else if (e.code == 'weak-password') {
+        _showSnack('Password is too weak!');
+      } else {
+        _showSnack('Register failed! Try again.');
+      }
     }
     setState(() => _regLoading = false);
+  }
+
+  Future<void> _forgotPassword() async {
+    if (_loginEmailController.text.isEmpty) {
+      _showSnack('Please enter your email first!');
+      return;
+    }
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+          email: _loginEmailController.text.trim());
+      _showSnack('Password reset email sent! Check your inbox.');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        _showSnack('No account found with this email!');
+      } else {
+        _showSnack('Error! Try again.');
+      }
+    }
   }
 
   @override
@@ -141,15 +176,14 @@ class _LoginScreenState extends State<LoginScreen>
                       controller: _tabController,
                       labelColor: const Color(0xFF3B6D11),
                       unselectedLabelColor: Colors.grey,
-                      indicatorColor:
-                          const Color(0xFF3B6D11),
+                      indicatorColor: const Color(0xFF3B6D11),
                       tabs: const [
                         Tab(text: 'Login'),
                         Tab(text: 'Register'),
                       ],
                     ),
                     SizedBox(
-                      height: 460,
+                      height: 420,
                       child: TabBarView(
                         controller: _tabController,
                         children: [
@@ -159,27 +193,6 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    _showSnack('Google Sign-In coming soon!'),
-                icon: const Icon(Icons.login,
-                    color: Color(0xFF3B6D11)),
-                label: const Text(
-                  'Continue with Google',
-                  style: TextStyle(
-                      color: Color(0xFF3B6D11)),
-                ),
-                style: OutlinedButton.styleFrom(
-                  minimumSize:
-                      const Size(double.infinity, 50),
-                  side: const BorderSide(
-                      color: Color(0xFF3B6D11)),
-                  shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(12)),
                 ),
               ),
             ],
@@ -222,20 +235,7 @@ class _LoginScreenState extends State<LoginScreen>
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () async {
-                if (_loginEmailController.text.isEmpty) {
-                  _showSnack(
-                      'Please enter your email first!');
-                  return;
-                }
-                await FirebaseAuth.instance
-                    .sendPasswordResetEmail(
-                        email: _loginEmailController
-                            .text
-                            .trim());
-                _showSnack(
-                    'Password reset email sent!');
-              },
+              onPressed: _forgotPassword,
               child: const Text(
                 'Forgot Password?',
                 style: TextStyle(
@@ -247,24 +247,19 @@ class _LoginScreenState extends State<LoginScreen>
           ElevatedButton(
             onPressed: _loginLoading ? null : _login,
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  const Color(0xFF3B6D11),
+              backgroundColor: const Color(0xFF3B6D11),
               foregroundColor: Colors.white,
-              minimumSize:
-                  const Size(double.infinity, 50),
+              minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: _loginLoading
                 ? const CircularProgressIndicator(
                     color: Colors.white)
-                : const Text(
-                    'Login',
+                : const Text('Login',
                     style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold),
-                  ),
+                        fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -308,8 +303,8 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey),
               borderRadius: BorderRadius.circular(12),
@@ -323,16 +318,16 @@ class _LoginScreenState extends State<LoginScreen>
                           value: role,
                           child: Row(children: [
                             Icon(_roleIcon(role),
-                                color: const Color(
-                                    0xFF3B6D11),
+                                color:
+                                    const Color(0xFF3B6D11),
                                 size: 20),
                             const SizedBox(width: 8),
                             Text(role),
                           ]),
                         ))
                     .toList(),
-                onChanged: (val) => setState(
-                    () => _selectedRole = val!),
+                onChanged: (val) =>
+                    setState(() => _selectedRole = val!),
               ),
             ),
           ),
@@ -340,24 +335,19 @@ class _LoginScreenState extends State<LoginScreen>
           ElevatedButton(
             onPressed: _regLoading ? null : _register,
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  const Color(0xFF3B6D11),
+              backgroundColor: const Color(0xFF3B6D11),
               foregroundColor: Colors.white,
-              minimumSize:
-                  const Size(double.infinity, 50),
+              minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: _regLoading
                 ? const CircularProgressIndicator(
                     color: Colors.white)
-                : const Text(
-                    'Create Account',
+                : const Text('Create Account',
                     style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold),
-                  ),
+                        fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -368,8 +358,8 @@ class _LoginScreenState extends State<LoginScreen>
       String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon,
-          color: const Color(0xFF3B6D11)),
+      prefixIcon:
+          Icon(icon, color: const Color(0xFF3B6D11)),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12)),
       focusedBorder: OutlineInputBorder(

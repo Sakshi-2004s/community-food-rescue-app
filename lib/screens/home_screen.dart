@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'donate_screen.dart';
 import 'request_screen.dart';
+import 'detail_screen.dart';
+import 'profile_screen.dart';
+import 'history_screen.dart';
+import 'volunteer_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,7 +21,9 @@ class _HomeScreenState extends State<HomeScreen> {
     const HomeDashboard(),
     const DonateScreen(),
     const RequestScreen(),
-    const Center(child: Text('Profile Coming Soon')),
+    const HistoryScreen(),
+    const VolunteerScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -45,6 +53,16 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Request',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'Activity',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.directions_bike_outlined),
+            activeIcon: Icon(Icons.directions_bike),
+            label: 'Volunteer',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
@@ -55,28 +73,59 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class HomeDashboard extends StatelessWidget {
+class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
+  @override
+  State<HomeDashboard> createState() => _HomeDashboardState();
+}
+
+class _HomeDashboardState extends State<HomeDashboard> {
+  String _selectedCategory = 'All';
+  final List<String> _categories = [
+    'All', 'Cooked Food', 'Raw Vegetables',
+    'Packed Food', 'Beverages'
+  ];
+
+  Stream<QuerySnapshot> _getStream() {
+    if (_selectedCategory == 'All') {
+      return FirebaseFirestore.instance
+          .collection('food_listings')
+          .where('status', isEqualTo: 'available')
+          .snapshots();
+    } else {
+      return FirebaseFirestore.instance
+          .collection('food_listings')
+          .where('status', isEqualTo: 'available')
+          .where('category', isEqualTo: _selectedCategory)
+          .snapshots();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final userName = user?.displayName ?? 'User';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4FAF0),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Hello, Sakshi! 👋',
-                        style: TextStyle(
+                      Text(
+                        'Hello, $userName! 👋',
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF27500A),
@@ -86,9 +135,8 @@ class HomeDashboard extends StatelessWidget {
                       Text(
                         'Let\'s rescue food today!',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                            fontSize: 14,
+                            color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -97,34 +145,68 @@ class HomeDashboard extends StatelessWidget {
                     height: 45,
                     decoration: BoxDecoration(
                       color: const Color(0xFF3B6D11),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius:
+                          BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.restaurant,
                         color: Colors.white, size: 24),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  _buildStatCard('12', 'Available\nNearby',
-                      Icons.food_bank,
-                      const Color(0xFF3B6D11),
-                      const Color(0xFFEAF3DE)),
-                  const SizedBox(width: 10),
-                  _buildStatCard('3', 'Expiring\nSoon',
-                      Icons.timer_outlined,
-                      const Color(0xFF633806),
-                      const Color(0xFFFAEEDA)),
-                  const SizedBox(width: 10),
-                  _buildStatCard('47', 'Meals\nRescued',
-                      Icons.favorite_outline,
-                      const Color(0xFF0C447C),
-                      const Color(0xFFE6F1FB)),
-                ],
+            ),
+
+            // Stats
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('food_listings')
+                    .where('status', isEqualTo: 'available')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  int available = 0;
+                  int total = 0;
+                  if (snapshot.hasData) {
+                    available =
+                        snapshot.data!.docs.length;
+                    total = available;
+                  }
+                  return Row(
+                    children: [
+                      _buildStatCard(
+                          '$available',
+                          'Available\nNearby',
+                          Icons.food_bank,
+                          const Color(0xFF3B6D11),
+                          const Color(0xFFEAF3DE)),
+                      const SizedBox(width: 10),
+                      _buildStatCard(
+                          '2',
+                          'Expiring\nSoon',
+                          Icons.timer_outlined,
+                          const Color(0xFF633806),
+                          const Color(0xFFFAEEDA)),
+                      const SizedBox(width: 10),
+                      _buildStatCard(
+                          '$total',
+                          'Meals\nRescued',
+                          Icons.favorite_outline,
+                          const Color(0xFF0C447C),
+                          const Color(0xFFE6F1FB)),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 20),
-              const Text(
+            ),
+
+            const SizedBox(height: 16),
+
+            // Category Filter
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16),
+              child: const Text(
                 'Browse by Category',
                 style: TextStyle(
                   fontSize: 16,
@@ -132,22 +214,61 @@ class HomeDashboard extends StatelessWidget {
                   color: Color(0xFF27500A),
                 ),
               ),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _buildChip('All', true),
-                    _buildChip('Cooked', false),
-                    _buildChip('Raw', false),
-                    _buildChip('Packed', false),
-                    _buildChip('Urgent', false),
-                  ],
-                ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16),
+                itemCount: _categories.length,
+                itemBuilder: (_, i) {
+                  final cat = _categories[i];
+                  final isSelected =
+                      _selectedCategory == cat;
+                  return GestureDetector(
+                    onTap: () => setState(
+                        () => _selectedCategory = cat),
+                    child: Container(
+                      margin:
+                          const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF3B6D11)
+                            : Colors.white,
+                        borderRadius:
+                            BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF3B6D11)
+                              : Colors.grey.shade300,
+                        ),
+                      ),
+                      child: Text(
+                        cat,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 20),
-              const Text(
+            ),
+
+            const SizedBox(height: 16),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16),
+              child: const Text(
                 'Available Near You',
                 style: TextStyle(
                   fontSize: 16,
@@ -155,28 +276,102 @@ class HomeDashboard extends StatelessWidget {
                   color: Color(0xFF27500A),
                 ),
               ),
-              const SizedBox(height: 10),
-              _buildFoodCard('Biryani + Dal Fry',
-                  'Hotel Shree Krishna • 0.4 km',
-                  '15 portions', 'Expires in 3h 20m', false),
-              _buildFoodCard('Mixed Vegetables',
-                  'Bhaji Market • 1.1 km',
-                  '5 kg', 'Expires in 1h 45m', true),
-              _buildFoodCard('Parle-G Biscuits',
-                  'Akurdi Colony • 1.8 km',
-                  '40 packets', 'Expires in 3 days', false),
-              _buildFoodCard('Rice + Sabzi',
-                  'Community Kitchen • 2.1 km',
-                  '20 portions', 'Expires in 5h', false),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+
+            // Real Firebase Listings
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _getStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFF3B6D11)));
+                  }
+
+                  if (!snapshot.hasData ||
+                      snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                              Icons.food_bank_outlined,
+                              size: 64,
+                              color: Colors.grey),
+                          const SizedBox(height: 12),
+                          Text(
+                            _selectedCategory == 'All'
+                                ? 'No food available right now'
+                                : 'No $_selectedCategory available',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey),
+                          ),
+                          const Text(
+                            'Be the first to donate!',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16),
+                    itemCount:
+                        snapshot.data!.docs.length,
+                    itemBuilder: (_, i) {
+                      final doc =
+                          snapshot.data!.docs[i];
+                      final data = doc.data()
+                          as Map<String, dynamic>;
+                      return GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DetailScreen(
+                              food: {
+                                'id': doc.id,
+                                'name':
+                                    data['title'] ?? '',
+                                'location': 'Near you',
+                                'quantity':
+                                    '${data['quantity']} ${data['unit']}',
+                                'expiry':
+                                    data['pickup_time'] ??
+                                        '',
+                                'category':
+                                    data['category'] ??
+                                        '',
+                                'urgent': false,
+                              },
+                            ),
+                          ),
+                        ),
+                        child: _buildFoodCard(
+                            data, doc.id),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const DonateScreen()));
-        },
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => const DonateScreen()),
+        ),
         backgroundColor: const Color(0xFF3B6D11),
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('Donate Food',
@@ -205,54 +400,24 @@ class HomeDashboard extends StatelessWidget {
                     color: textColor)),
             Text(label,
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(fontSize: 11, color: textColor)),
+                style: TextStyle(
+                    fontSize: 11, color: textColor)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChip(String label, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(
-          horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? const Color(0xFF3B6D11)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected
-              ? const Color(0xFF3B6D11)
-              : Colors.grey.shade300,
-        ),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: isSelected
-                  ? Colors.white
-                  : Colors.grey[700])),
-    );
-  }
-
-  Widget _buildFoodCard(String name, String location,
-      String quantity, String expiry, bool isUrgent) {
+  Widget _buildFoodCard(
+      Map<String, dynamic> data, String id) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isUrgent
-              ? const Color(0xFFE24B4A)
-              : Colors.grey.shade200,
-          width: isUrgent ? 1.5 : 1,
-        ),
+        border:
+            Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
@@ -269,56 +434,41 @@ class HomeDashboard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(name,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1a1a1a))),
-                    if (isUrgent)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE24B4A),
-                          borderRadius:
-                              BorderRadius.circular(10),
-                        ),
-                        child: const Text('Urgent',
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight:
-                                    FontWeight.bold)),
-                      ),
-                  ],
+                Text(
+                  data['title'] ?? 'Food Item',
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1a1a1a)),
                 ),
                 const SizedBox(height: 4),
-                Text(location,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600])),
+                Text(
+                  data['category'] ?? '',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600]),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment:
                       MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(quantity,
-                        style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF3B6D11),
-                            fontWeight: FontWeight.w500)),
-                    Text(expiry,
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: isUrgent
-                                ? const Color(0xFFE24B4A)
-                                : Colors.grey[500])),
+                    Text(
+                      '${data['quantity']} ${data['unit']}',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF3B6D11),
+                          fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      data['pickup_time'] ?? '',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500]),
+                    ),
                   ],
                 ),
               ],
